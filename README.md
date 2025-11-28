@@ -47,8 +47,8 @@ Passos seguidos para o desenvolvimento:
 
 ### 11. Implementação do Controller
 
-Passo a Passo para executar o código
+Observações para executar o código
 
 ### 1. Criar o Banco de Dados com o nome explícitado no código (banco de dados em questão: cursos")
-
+### 2. Observar em qual porta da sua máquina o Banco de Dados está conectado
 
