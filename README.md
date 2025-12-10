@@ -65,7 +65,7 @@ SQL
 # Autores
 Equipe de Desenvolvimento: Pedro Araujo e Lucas Anciolly
 
-# Contato: pedrol.dearaujo13@gmail.com
-
 # Licença
 Este projeto está licenciado sob a licença Apache 2.0.
+
+Contato: pedro.ldearaujo13@gmail.com
