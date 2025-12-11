@@ -1,6 +1,7 @@
 package com.psicare.psychology.services;
 
 import com.psicare.psychology.dtos.CadastroRecordDto;
+import com.psicare.psychology.enums.Agendamento;
 import com.psicare.psychology.enums.StatusPaciente;
 import com.psicare.psychology.models.AgendamentoModel;
 import com.psicare.psychology.models.PacienteModel;
@@ -25,33 +26,48 @@ public class PacienteService {
 
     @Transactional
     public PacienteModel cadastrarCompleto(CadastroRecordDto dto){
-        //Criar e Salvar
+        // 1. Criar e Salvar Paciente
         PacienteModel pacienteModel = new PacienteModel();
         pacienteModel.setNome(dto.nome());
         pacienteModel.setTelefone(dto.telefone());
         pacienteModel.setEmail(dto.email());
         pacienteModel.setDataNascimento(dto.dataNascimento());
-        pacienteModel.setStatus(StatusPaciente.valueOf(String.valueOf(dto.status())));
-        pacienteModel.setFrequencia(dto.frequencia());
 
-        //gerar ID do paciente
+        // CORREÇÃO ERRO 500: Simplifique a atribuição.
+        // Não use valueOf(String.valueOf(...)) pois se vier null, quebra o sistema.
+        pacienteModel.setStatus(dto.status());
+
+        // pacienteModel.setFrequencia(dto.frequencia()); // Descomente se tiver o campo no model
+
         pacienteModel = pacienteRepository.save(pacienteModel);
 
-        // Criar e Salvar o projeto
+        // 2. Criar e Salvar Prontuário
         ProntuarioModel prontuarioModel = new ProntuarioModel();
         prontuarioModel.setQueixaPrincipal(dto.queixaPrincipal());
         prontuarioModel.setHistoricoFamiliar(dto.historicoFamiliar());
         prontuarioModel.setObservacoesIniciais(dto.observacoesIniciais());
         prontuarioModel.setAnotacoesGerais(dto.anotacoesGerais());
-        prontuarioModel.setPaciente(pacienteModel);
+        prontuarioModel.setPaciente(pacienteModel); // Vincula ao paciente
 
         prontuarioRepository.save(prontuarioModel);
 
-        // criar agendamento se o usuário tiver preenchido data e hora
+        // 3. CORREÇÃO AGENDAMENTO: Criar, Vincular e SALVAR
         if (dto.dataSessao() != null && dto.horarioSessao() != null){
             AgendamentoModel agendamentoModel = new AgendamentoModel();
+
             agendamentoModel.setData(dto.dataSessao());
+            agendamentoModel.setHora(dto.horarioSessao()); // Faltava setar a hora
+
+            // IMPORTANTE: Vincular o agendamento ao paciente que acabamos de criar
+            agendamentoModel.setPaciente(pacienteModel);
+
+            // Opcional: Definir um status inicial se necessário
+            // agendamentoModel.setStatus(com.psicare.psychology.enums.Agendamento.AGENDADO);
+
+            // CRUCIAL: Salvar no banco. Sem isso o agendamento é perdido.
+            agendamentoRepository.save(agendamentoModel);
         }
+
         return pacienteModel;
     }
     // 2- Listar Todos
