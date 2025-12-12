@@ -25,8 +25,11 @@ public class PacienteModel {
 
     @Enumerated(EnumType.STRING)
     private StatusPaciente status;
+
+    @Enumerated(EnumType.STRING) // É boa prática colocar EnumType.STRING na frequência também
     private FrequenciaSessao frequencia;
 
+    // CORREÇÃO: Removido @CreationTimestamp para permitir que o usuário defina a data correta
     private LocalDate dataNascimento;
 
     @CreationTimestamp
@@ -40,7 +43,4 @@ public class PacienteModel {
 
     @OneToMany(mappedBy = "paciente", fetch = FetchType.EAGER)
     private List<AgendamentoModel> agendamento;
-
-
-
 }

@@ -1,8 +1,6 @@
 package com.psicare.psychology.services;
 
 import com.psicare.psychology.dtos.CadastroRecordDto;
-import com.psicare.psychology.enums.Agendamento;
-import com.psicare.psychology.enums.StatusPaciente;
 import com.psicare.psychology.models.AgendamentoModel;
 import com.psicare.psychology.models.PacienteModel;
 import com.psicare.psychology.models.ProntuarioModel;
@@ -23,7 +21,6 @@ public class PacienteService {
     @Autowired private ProntuarioRepository prontuarioRepository;
     @Autowired private AgendamentoRepository agendamentoRepository;
 
-
     @Transactional
     public PacienteModel cadastrarCompleto(CadastroRecordDto dto){
         // 1. Criar e Salvar Paciente
@@ -33,43 +30,39 @@ public class PacienteService {
         pacienteModel.setEmail(dto.email());
         pacienteModel.setDataNascimento(dto.dataNascimento());
 
-        // CORREÇÃO ERRO 500: Simplifique a atribuição.
-        // Não use valueOf(String.valueOf(...)) pois se vier null, quebra o sistema.
+        // CORREÇÃO: Uso direto do enum. Remove a conversão que causava erro 500.
         pacienteModel.setStatus(dto.status());
 
-        // pacienteModel.setFrequencia(dto.frequencia()); // Descomente se tiver o campo no model
+        pacienteModel.setFrequencia(dto.frequencia());
 
         pacienteModel = pacienteRepository.save(pacienteModel);
 
-        // 2. Criar e Salvar Prontuário
+        // 2. Criar e Salvar o Prontuário
         ProntuarioModel prontuarioModel = new ProntuarioModel();
         prontuarioModel.setQueixaPrincipal(dto.queixaPrincipal());
         prontuarioModel.setHistoricoFamiliar(dto.historicoFamiliar());
         prontuarioModel.setObservacoesIniciais(dto.observacoesIniciais());
         prontuarioModel.setAnotacoesGerais(dto.anotacoesGerais());
-        prontuarioModel.setPaciente(pacienteModel); // Vincula ao paciente
+        prontuarioModel.setPaciente(pacienteModel);
 
         prontuarioRepository.save(prontuarioModel);
 
-        // 3. CORREÇÃO AGENDAMENTO: Criar, Vincular e SALVAR
+        // 3. Criar Agendamento (CORREÇÃO: Agora salva no banco e vincula corretamente)
         if (dto.dataSessao() != null && dto.horarioSessao() != null){
             AgendamentoModel agendamentoModel = new AgendamentoModel();
-
             agendamentoModel.setData(dto.dataSessao());
             agendamentoModel.setHora(dto.horarioSessao()); // Faltava setar a hora
+            agendamentoModel.setPaciente(pacienteModel);   // Faltava vincular ao paciente
 
-            // IMPORTANTE: Vincular o agendamento ao paciente que acabamos de criar
-            agendamentoModel.setPaciente(pacienteModel);
+            // Defina um status padrão se necessário, ex: Agendamento.CONFIRMADO
+            // agendamentoModel.setStatus(Agendamento.CONFIRMADO);
 
-            // Opcional: Definir um status inicial se necessário
-            // agendamentoModel.setStatus(com.psicare.psychology.enums.Agendamento.AGENDADO);
-
-            // CRUCIAL: Salvar no banco. Sem isso o agendamento é perdido.
-            agendamentoRepository.save(agendamentoModel);
+            agendamentoRepository.save(agendamentoModel); // Faltava salvar!
         }
 
         return pacienteModel;
     }
+
     // 2- Listar Todos
     public List<PacienteModel> listarTodos(){
         return pacienteRepository.findAll();
@@ -85,20 +78,18 @@ public class PacienteService {
     public void deletar(PacienteModel paciente){
         pacienteRepository.delete(paciente);
     }
-    // 5- Atualizar
+
+    // 5- Atualizar (PUT)
     @Transactional
     public PacienteModel atualizar(PacienteModel pacienteExistente, CadastroRecordDto dto){
-
-        //Atualiza dados doo Paciente
         pacienteExistente.setNome(dto.nome());
         pacienteExistente.setTelefone(dto.telefone());
         pacienteExistente.setEmail(dto.email());
         pacienteExistente.setDataNascimento(dto.dataNascimento());
         pacienteExistente.setStatus(dto.status());
+        pacienteExistente.setFrequencia(dto.frequencia()); // Faltava atualizar frequência
 
-        //Atualiza dados do Prontuário vinculado
         ProntuarioModel prontuarioModel = pacienteExistente.getProntuario();
-
         if (prontuarioModel == null){
             prontuarioModel = new ProntuarioModel();
             prontuarioModel.setPaciente(pacienteExistente);
@@ -111,23 +102,21 @@ public class PacienteService {
 
         prontuarioRepository.save(prontuarioModel);
         return pacienteRepository.save(pacienteExistente);
-
     }
 
-    // 6 - Atualização de apenas um campo (patch)
+    // 6 - Atualização Parcial (PATCH)
     @Transactional
     public PacienteModel atualizarParcial(Long id, CadastroRecordDto dto){
-        //Busca o paciente
         PacienteModel pacienteModel = pacienteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado com ID: " + id));
-        //atualiza dados do paciente (se vierem no DTO)
+
         if(dto.nome() != null) pacienteModel.setNome(dto.nome());
         if(dto.telefone() != null) pacienteModel.setTelefone(dto.telefone());
         if (dto.email() != null) pacienteModel.setEmail(dto.email());
         if (dto.dataNascimento() != null) pacienteModel.setDataNascimento(dto.dataNascimento());
         if (dto.status() != null) pacienteModel.setStatus(dto.status());
+        if (dto.frequencia() != null) pacienteModel.setFrequencia(dto.frequencia());
 
-        //prontuario
         ProntuarioModel prontuarioModel = pacienteModel.getProntuario();
         if (prontuarioModel == null){
             prontuarioModel = new ProntuarioModel();
@@ -139,6 +128,7 @@ public class PacienteService {
         if (dto.observacoesIniciais() != null) prontuarioModel.setObservacoesIniciais(dto.observacoesIniciais());
         if (dto.anotacoesGerais() != null) prontuarioModel.setAnotacoesGerais(dto.anotacoesGerais());
 
-        return  pacienteRepository.save(pacienteModel);
+        prontuarioRepository.save(prontuarioModel); // É bom garantir o salvamento do prontuário
+        return pacienteRepository.save(pacienteModel);
     }
 }

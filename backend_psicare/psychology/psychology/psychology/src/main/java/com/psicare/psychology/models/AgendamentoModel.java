@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.psicare.psychology.enums.Agendamento;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString; // Importante
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -11,7 +12,6 @@ import java.time.LocalTime;
 @Data
 @Entity
 @Table(name = "agendamentos")
-
 public class AgendamentoModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +25,7 @@ public class AgendamentoModel {
 
     @ManyToOne
     @JoinColumn(name = "paciente_id")
-    @JsonIgnore
+    @JsonIgnore // Evita loop no JSON (envio para o front)
+    @ToString.Exclude // <--- OBRIGATÓRIO: Evita loop no Console (erro 500)
     private PacienteModel paciente;
-
 }
